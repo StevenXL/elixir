@@ -386,7 +386,7 @@ defmodule Mix.Compilers.Elixir do
       end
 
     manifest_data =
-      [@manifest_vsn | modules ++ sources]
+      [@manifest_vsn | normalize_paths(modules ++ sources)]
       |> :erlang.term_to_binary(compressed: 9)
 
     File.write!(manifest, manifest_data)
@@ -396,4 +396,14 @@ defmodule Mix.Compilers.Elixir do
     # is properly stored.
     Mix.Dep.ElixirSCM.update
   end
+
+  defp normalize_paths(records) do
+    cwd = File.cwd!
+    Enum.map(records, &normalize_path(&1, cwd))
+  end
+
+  defp normalize_path(module(source: path) = module, cwd),
+    do: module(module, source: Path.relative_to(path, cwd))
+  defp normalize_path(source(source: path) = source, cwd),
+    do: source(source, source: Path.relative_to(path, cwd))
 end
